@@ -897,7 +897,12 @@ func (p *Pss) forward(msg *PssMsg) error {
 
 	// send with kademlia
 	// find the closest peer to the recipient and attempt to send
-	sent := 0
+       // send with kademlia
+        // find the closest peer to the recipient and attempt to send
+        sent := 0
+       ponow, _ := p.Kademlia.Pof(p.BaseAddr(), to, 0)
+       depth := 0
+ 	sent := 0
 	p.Kademlia.EachConn(to, 256, func(sp *network.Peer, po int, isproxbin bool) bool {
 		info := sp.Info()
 
