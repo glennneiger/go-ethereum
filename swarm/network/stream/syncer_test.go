@@ -69,6 +69,8 @@ func createMockStore(globalStore *mockdb.GlobalStore, id enode.ID, addr *network
 }
 
 func testSyncBetweenNodes(t *testing.T, nodes, conns, chunkCount int, skipCheck bool, po uint8) {
+
+	t.Skip("temporarily disabled as simuations.WaitTillHealthy cannot be trusted")
 	sim := simulation.New(map[string]simulation.ServiceFunc{
 		"streamer": func(ctx *adapters.ServiceContext, bucket *sync.Map) (s node.Service, cleanup func(), err error) {
 			var store storage.ChunkStore
