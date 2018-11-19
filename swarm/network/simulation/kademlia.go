@@ -52,17 +52,20 @@ func (s *Simulation) WaitTillHealthy(ctx context.Context, kadMinProxSize int) (i
 	for {
 		select {
 		case <-ctx.Done():
+			log.Error("quit on done chan")
 			return ill, ctx.Err()
 		case <-ticker.C:
 			for k := range ill {
+				log.Error("deleting key from kademlia on ticker chan")
 				delete(ill, k)
 			}
-			log.Debug("kademlia health check", "addr count", len(addrs))
+			log.Error("kademlia health check", "addr count", len(addrs))
 			for id, k := range kademlias {
 				//PeerPot for this node
 				addr := common.Bytes2Hex(k.BaseAddr())
 				pp := ppmap[addr]
 				//call Healthy RPC
+				log.Error("calling kademlia healthy")
 				h := k.Healthy(pp)
 				//print info
 				log.Debug(k.String())
