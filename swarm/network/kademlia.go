@@ -649,21 +649,16 @@ func NewPeerPotMap(kadMinProxSize int, addrs [][]byte) map[string]*PeerPot {
 		// all nn-peers
 		var nns [][]byte
 
-		// used to skip empty bins immediately after nn-peers
-		//		depthTraversed := false
-
 		np.EachNeighbour(a, pof, func(val pot.Val, po int) bool {
 			addr := val.([]byte)
 			if bytes.Equal(pot.ToBytes(val), a) {
 				return true
 			}
 
-			// interate through the neighbours, going from the closest to the farthest
+			// iterate through the neighbours, going from the closest to the farthest
 			// we calculate the nearest neighbours that should be in the set
 			// depth in all bins that are higher or equal than depth there are at least minproxbin size connected and depth-1 is not empty
-			//			if po == 256 {
-			//				return true
-			//			}
+
 			if po >= depth {
 				nns = append(nns, addr)
 				prevPo = depth - 1

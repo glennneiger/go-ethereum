@@ -731,3 +731,83 @@ func newTestDiscoveryPeer(addr pot.Address, kad *Kademlia) *Peer {
 	}
 	return NewPeer(bp, kad)
 }
+
+func TestPeerPotMap(t *testing.T) {
+	baseAddressBytes := RandomAddr().OAddr
+	baseAddress := pot.NewAddressFromBytes(baseAddressBytes)
+	kad := NewKademlia(baseAddressBytes, NewKadParams())
+
+	closerAddress := pot.RandomAddressAt(baseAddress, 7)
+	closerPeer := newTestDiscoveryPeer(closerAddress, kad)
+	kad.On(closerPeer)
+	depth := kad.NeighbourhoodDepth()
+	if depth != 0 {
+		t.Fatalf("expected depth 0, was %d", depth)
+	}
+
+	sameAddress := pot.RandomAddressAt(baseAddress, 7)
+	samePeer := newTestDiscoveryPeer(sameAddress, kad)
+	kad.On(samePeer)
+	depth = kad.NeighbourhoodDepth()
+	if depth != 0 {
+		t.Fatalf("expected depth 0, was %d", depth)
+	}
+	someAddr := pot.RandomAddressAt(baseAddress, 4)
+	someAddr2 := pot.RandomAddressAt(baseAddress, 2)
+
+	somePeer := newTestDiscoveryPeer(someAddr, kad)
+	somePeer2 := newTestDiscoveryPeer(someAddr2, kad)
+	ppmap := NewPeerPotMap(2, [][]byte{
+		baseAddressBytes,
+		closerAddress.Bytes(),
+		sameAddress.Bytes(),
+		someAddr.Bytes(),
+		someAddr2.Bytes()})
+
+	kad.On(somePeer)
+	kad.On(somePeer2)
+	//	kad.Off(somePeer)
+	//	kad.Off(somePeer2)
+
+	pp := ppmap[common.Bytes2Hex(baseAddressBytes)]
+	log.Error("empty bins", "bb", pp.EmptyBins)
+	/*	midAddress := pot.RandomAddressAt(baseAddress, 4)
+		midPeer := newTestDiscoveryPeer(midAddress, kad)
+		kad.On(midPeer)
+		depth = kad.NeighbourhoodDepth()
+		if depth != 5 {
+			t.Fatalf("expected depth 5, was %d", depth)
+		}
+
+		kad.Off(midPeer)
+		depth = kad.NeighbourhoodDepth()
+		if depth != 0 {
+			t.Fatalf("expected depth 0, was %d", depth)
+		}
+
+		fartherAddress := pot.RandomAddressAt(baseAddress, 1)
+		fartherPeer := newTestDiscoveryPeer(fartherAddress, kad)
+		kad.On(fartherPeer)
+		depth = kad.NeighbourhoodDepth()
+		if depth != 2 {
+			t.Fatalf("expected depth 2, was %d", depth)
+		}
+
+		midSameAddress := pot.RandomAddressAt(baseAddress, 4)
+		midSamePeer := newTestDiscoveryPeer(midSameAddress, kad)
+		kad.Off(closerPeer)
+		kad.On(midPeer)
+		kad.On(midSamePeer)
+		depth = kad.NeighbourhoodDepth()
+		if depth != 2 {
+			t.Fatalf("expected depth 2, was %d", depth)
+		}
+
+		kad.Off(fartherPeer)
+		log.Trace(kad.string())
+		time.Sleep(time.Millisecond)
+		depth = kad.NeighbourhoodDepth()
+		if depth != 0 {
+			t.Fatalf("expected depth 0, was %d", depth)
+		}*/
+}
