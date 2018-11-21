@@ -637,7 +637,7 @@ func NewPeerPotMap(kadMinProxSize int, addrs [][]byte) map[string]*PeerPot {
 
 		// set to proxbin depth when all nn-peers are found
 		depth := depthForPot(np, kadMinProxSize, a)
-		log.Error("depthForPot", "depth", depth)
+		log.Error("depthForPot", "addr", common.Bytes2Hex(a), "depth", depth)
 		// upon entering a new iteration
 		// this will hold the value the po should be
 		// if it's one higher than the po in the last iteration
@@ -658,7 +658,7 @@ func NewPeerPotMap(kadMinProxSize int, addrs [][]byte) map[string]*PeerPot {
 			// iterate through the neighbours, going from the closest to the farthest
 			// we calculate the nearest neighbours that should be in the set
 			// depth in all bins that are higher or equal than depth there are at least minproxbin size connected and depth-1 is not empty
-
+			log.Error("pod", "po", po, "depth", depth)
 			if po >= depth {
 				nns = append(nns, addr)
 				prevPo = depth - 1
