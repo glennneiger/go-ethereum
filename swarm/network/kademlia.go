@@ -451,6 +451,7 @@ func depthForPot(p *pot.Pot, minProxBinSize int, pivotAddr []byte) (depth int) {
 	var lastPo int
 
 	f := func(v pot.Val, i int) bool {
+		log.Error("depthCalc", "b", b, "i", i, "depth", depth, "lastPo", lastPo)
 		if bytes.Equal(pot.ToBytes(v), pivotAddr) {
 			return true
 		}
@@ -657,18 +658,17 @@ func NewPeerPotMap(kadMinProxSize int, addrs [][]byte) map[string]*PeerPot {
 
 			// iterate through the neighbours, going from the closest to the farthest
 			// we calculate the nearest neighbours that should be in the set
-			// depth in all bins that are higher or equal than depth there are at least minproxbin size connected and depth-1 is not empty
+			// depth in all bins that are higher or equal than depth there are
+			// at least minproxbin size connected and depth-1 is not empty
 			log.Error("pod", "po", po, "depth", depth)
 			if po >= depth {
 				nns = append(nns, addr)
 				prevPo = depth - 1
 				return true
 			}
-			//else {
 			for j := prevPo; j > po; j-- {
 				emptyBins = append(emptyBins, j)
 			}
-			//	}
 			prevPo = po - 1
 			return true
 		})
