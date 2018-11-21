@@ -53,6 +53,7 @@ func (w *watcher) start() {
 }
 
 func (w *watcher) close() {
+	log.Error("wtf")
 	close(w.quit)
 }
 
@@ -93,6 +94,7 @@ func (w *watcher) loop() {
 	for {
 		select {
 		case <-w.quit:
+			log.Error("unwatching keystore")
 			return
 		case <-w.ev:
 			// Trigger the scan (with delay), if not already triggered

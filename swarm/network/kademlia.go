@@ -678,7 +678,7 @@ func NewPeerPotMap(kadMinProxSize int, addrs [][]byte) map[string]*PeerPot {
 			return true
 		})
 
-		log.Trace(fmt.Sprintf("%x NNS: %s", addrs[i][:4], LogAddrs(nns)))
+		log.Trace(fmt.Sprintf("%x NNS: %s, emptyBins: %s", addrs[i][:4], LogAddrs(nns), logEmptyBins(emptyBins)))
 		ppmap[common.Bytes2Hex(a)] = &PeerPot{nns, emptyBins}
 	}
 	return ppmap
@@ -810,11 +810,11 @@ type Health struct {
 func (k *Kademlia) Healthy(pp *PeerPot) *Health {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
-	//log.Error("checking gNN set", "set", pp.NNSet)
+	log.Error("checking gNN set", "set", pp.NNSet)
 	gotnn, countnn, culpritsnn := k.gotNearestNeighbours(pp.NNSet)
-	//log.Error("checking kNN set", "set", pp.NNSet)
+	log.Error("checking kNN set", "set", pp.NNSet)
 	knownn := k.knowNearestNeighbours(pp.NNSet)
-	//	log.Error("checking empty bins set", "set", pp.EmptyBins)
+	log.Error("checking empty bins set", "set", pp.EmptyBins)
 
 	full := k.full(pp.EmptyBins)
 	log.Trace(fmt.Sprintf("%08x: healthy: knowNNs: %v, gotNNs: %v, full: %v\n", k.BaseAddr()[:4], knownn, gotnn, full))

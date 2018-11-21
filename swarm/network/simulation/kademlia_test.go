@@ -48,7 +48,7 @@ func TestWaitTillHealthy(t *testing.T) {
 	})
 	defer sim.Close()
 
-	_, err := sim.AddNodesAndConnectRing(10)
+	_, err := sim.AddNodesAndConnectRing(12)
 	if err != nil {
 		t.Fatal(err)
 	}
