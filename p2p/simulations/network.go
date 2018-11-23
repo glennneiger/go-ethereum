@@ -87,10 +87,13 @@ func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) 
 	if conf.Reachable == nil {
 		conf.Reachable = func(otherID enode.ID) bool {
 			_, err := net.InitConn(conf.ID, otherID)
-			if err != nil && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
-				return false
-			}
-			return true
+			log.Error("got error on InitConn", "err", err)
+
+			return err == nil
+			/*	if err != nil && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
+					return false
+				}
+				return true*/
 		}
 	}
 

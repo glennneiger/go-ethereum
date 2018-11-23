@@ -93,6 +93,7 @@ func (s *Simulation) AddNode(opts ...AddNodeOption) (id enode.ID, err error) {
 	for _, o := range opts {
 		o(conf)
 	}
+	log.Error("adding node with config", "len(svcs)", len(conf.Services))
 	if len(conf.Services) == 0 {
 		conf.Services = s.serviceNames
 	}

@@ -169,6 +169,7 @@ func (b *Bzz) APIs() []rpc.API {
 // the overlay address on the BzzPeer is set from the remote handshake
 func (b *Bzz) RunProtocol(spec *protocols.Spec, run func(*BzzPeer) error) func(*p2p.Peer, p2p.MsgReadWriter) error {
 	return func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
+		log.Debug("bzz.RunProtocol", "node", b.localAddr.ID().String()[:4], "protocol", spec.Name)
 		// wait for the bzz protocol to perform the handshake
 		handshake, _ := b.GetHandshake(p.ID())
 		defer b.removeHandshake(p.ID())
@@ -188,7 +189,7 @@ func (b *Bzz) RunProtocol(spec *protocols.Spec, run func(*BzzPeer) error) func(*
 			LightNode:  handshake.LightNode,
 		}
 
-		log.Debug("peer created", "addr", handshake.peerAddr.String())
+		log.Debug("peer created", "addr", handshake.peerAddr.String()[:4])
 
 		return run(peer)
 	}
@@ -311,10 +312,12 @@ func (b *Bzz) removeHandshake(peerID enode.ID) {
 
 // GetHandshake returns the bzz handhake that the remote peer with peerID sent
 func (b *Bzz) GetHandshake(peerID enode.ID) (*HandshakeMsg, bool) {
+	log.Debug("bzz.GetHandshake", "localAddr", b.localAddr.ID().String(), "peerID", peerID.String())
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 	handshake, found := b.handshakes[peerID]
 	if !found {
+		log.Debug("Could not find handshake for peer, creating new one", "peerID", peerID.String())
 		handshake = &HandshakeMsg{
 			Version:   uint64(BzzSpec.Version),
 			NetworkID: b.NetworkID,

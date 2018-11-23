@@ -22,7 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	"github.com/ethereum/go-ethereum/swarm/network"
 )
@@ -48,7 +50,19 @@ func TestWaitTillHealthy(t *testing.T) {
 	})
 	defer sim.Close()
 
-	_, err := sim.AddNodesAndConnectRing(10)
+	_, err := sim.AddNodesAndConnectRing(10, func(conf *adapters.NodeConfig) {
+		conf.Reachable = func(otherID enode.ID) bool {
+			_, err := sim.Net.InitConn(conf.ID, otherID)
+			log.Error("got error on InitConn", "err", err)
+
+			return err == nil
+			/*	if err != nil && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
+					return false
+				}
+				return true*/
+		}
+
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
