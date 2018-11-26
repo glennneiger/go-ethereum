@@ -770,7 +770,7 @@ func (p *Pss) SendRaw(address PssAddress, topic Topic, msg []byte) error {
 
 	// if we have a proxhandler on this topic
 	// also deliver message to ourselves
-	if p.isSelfPossibleRecipient(pssMsg, true) && p.topicHandlerCaps[topic].prox {
+	if p.topicHandlerCaps[topic].prox && p.isSelfPossibleRecipient(pssMsg, true) {
 		return p.process(pssMsg, true, true)
 	}
 	return nil
