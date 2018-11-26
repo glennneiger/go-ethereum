@@ -59,6 +59,7 @@ type Network struct {
 	nodeAdapter adapters.NodeAdapter
 	events      event.Feed
 	lock        sync.RWMutex
+	lock2       sync.RWMutex
 	quitc       chan struct{}
 }
 
@@ -83,11 +84,12 @@ func (net *Network) Events() *event.Feed {
 func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) {
 	net.lock.Lock()
 	defer net.lock.Unlock()
-
 	if conf.Reachable == nil {
 		conf.Reachable = func(otherID enode.ID) bool {
+			log.Trace("checking reachability")
 			_, err := net.InitConn(conf.ID, otherID)
-			if err != nil && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
+			if err != nil {
+				log.Error("this is what we're looking for", "err", err)
 				return false
 			}
 			return true
@@ -472,13 +474,17 @@ func (net *Network) InitConn(oneID, otherID enode.ID) (*Conn, error) {
 	if oneID == otherID {
 		return nil, fmt.Errorf("refusing to connect to self %v", oneID)
 	}
+	log.Error("initConn getOrCreate")
+
 	conn, err := net.getOrCreateConn(oneID, otherID)
 	if err != nil {
 		return nil, err
 	}
+	log.Error("initConn ifUp", "up", conn.Up)
 	if conn.Up {
 		return nil, fmt.Errorf("%v and %v already connected", oneID, otherID)
 	}
+	log.Error("initConn timeSince", "timesince", time.Since(conn.initiated))
 	if time.Since(conn.initiated) < DialBanTimeout {
 		return nil, fmt.Errorf("connection between %v and %v recently attempted", oneID, otherID)
 	}

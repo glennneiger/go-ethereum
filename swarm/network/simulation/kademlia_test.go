@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	"github.com/ethereum/go-ethereum/swarm/network"
@@ -39,7 +40,10 @@ func TestWaitTillHealthy(t *testing.T) {
 				UnderlayAddr: addr.Under(),
 				HiveParams:   hp,
 			}
-			kad := network.NewKademlia(addr.Over(), network.NewKadParams())
+			kadParams := network.NewKadParams()
+			kadParams.Reachable = ctx.Config.Reachable
+			kad := network.NewKademlia(addr.Over(), kadParams)
+			log.Error("creating kademlia", "reachable nil?", ctx.Config.Reachable == nil, "kadReachable nil?", kad.Reachable == nil)
 			// store kademlia in node's bucket under BucketKeyKademlia
 			// so that it can be found by WaitTillHealthy method.
 			b.Store(BucketKeyKademlia, kad)

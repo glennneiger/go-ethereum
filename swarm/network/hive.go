@@ -56,10 +56,11 @@ func NewHiveParams() *HiveParams {
 
 // Hive manages network connections of the swarm node
 type Hive struct {
-	*HiveParams                   // settings
-	*Kademlia                     // the overlay connectiviy driver
-	Store       state.Store       // storage interface to save peers across sessions
-	addPeer     func(*enode.Node) // server callback to connect to a peer
+	*HiveParams                    // settings
+	*Kademlia                      // the overlay connectiviy driver
+	Store       state.Store        // storage interface to save peers across sessions
+	addPeer     func(*enode.Node)  // server callback to connect to a peer
+	p2pPeers    func() []*p2p.Peer //returns all connected p2p peers
 	// bookkeeping
 	lock   sync.Mutex
 	peers  map[enode.ID]*BzzPeer
@@ -94,6 +95,7 @@ func (h *Hive) Start(server *p2p.Server) error {
 	}
 	// assigns the p2p.Server#AddPeer function to connect to peers
 	h.addPeer = server.AddPeer
+	h.p2pPeers = server.Peers
 	// ticker to keep the hive alive
 	h.ticker = time.NewTicker(h.KeepAliveInterval)
 	// this loop is doing bootstrapping and maintains a healthy table

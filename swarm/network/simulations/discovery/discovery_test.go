@@ -554,7 +554,9 @@ func newService(ctx *adapters.ServiceContext) (node.Service, error) {
 	kp.MinProxBinSize = testMinProxBinSize
 
 	if ctx.Config.Reachable != nil {
+		log.Trace("reachable1")
 		kp.Reachable = func(o *network.BzzAddr) bool {
+			log.Trace("reachable11")
 			return ctx.Config.Reachable(o.ID())
 		}
 	}
