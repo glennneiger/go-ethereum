@@ -88,7 +88,7 @@ func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) 
 		conf.Reachable = func(otherID enode.ID) bool {
 			log.Trace("checking reachability")
 			_, err := net.InitConn(conf.ID, otherID)
-			if err != nil {
+			if err != nil && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
 				log.Error("this is what we're looking for", "err", err)
 				return false
 			}

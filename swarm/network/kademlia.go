@@ -517,7 +517,6 @@ func (k *Kademlia) callable(e *entry) bool {
 		log.Trace(fmt.Sprintf("%08x: %v long time since last try (at %v) needed before retry %v, wait only warrants %v", k.BaseAddr()[:4], e, timeAgo, e.retries, retries))
 		return false
 	}
-	log.Error("checking rreaching")
 	// function to sanction or prevent suggesting a peer
 	if k.Reachable != nil {
 		enode := enode.ID{}
@@ -702,6 +701,8 @@ func (k *Kademlia) saturation(n int) int {
 // full returns true if all required bins have connected peers.
 // It is used in Healthy function for testing only
 func (k *Kademlia) full(emptyBins []int) (full bool) {
+	log.Debug("kademlia.full", "emptyBins", emptyBins)
+
 	prev := 0
 	e := len(emptyBins)
 	ok := true
