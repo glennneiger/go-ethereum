@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -88,7 +89,7 @@ func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) 
 		conf.Reachable = func(otherID enode.ID) bool {
 			log.Trace("checking reachability")
 			_, err := net.InitConn(conf.ID, otherID)
-			if err != nil && time.Now().Unix()%2 == 0 { // && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
+			if err != nil { // && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
 				log.Error("this is what we're looking for", "err", err)
 				return false
 			}
@@ -486,7 +487,9 @@ func (net *Network) InitConn(oneID, otherID enode.ID) (*Conn, error) {
 	}
 	log.Error("initConn timeSince", "timesince", time.Since(conn.initiated))
 	if time.Since(conn.initiated) < DialBanTimeout {
-		time.Sleep(DialBanTimeout)
+		//	time.Sleep(DialBanTimeout)
+		r := rand.New(rand.NewSource(99))
+		time.Sleep(time.Duration(r.Int31n(200)) * time.Millisecond)
 		return nil, fmt.Errorf("connection between %v and %v recently attempted", oneID, otherID)
 		//	return conn, nil
 	}
@@ -498,6 +501,7 @@ func (net *Network) InitConn(oneID, otherID enode.ID) (*Conn, error) {
 	}
 	log.Debug("Connection initiated", "id", oneID, "other", otherID)
 	conn.initiated = time.Now()
+	conn.lastInitiator = oneID
 	return conn, nil
 }
 
@@ -584,10 +588,10 @@ type Conn struct {
 	// Up tracks whether or not the connection is active
 	Up bool `json:"up"`
 	// Registers when the connection was grabbed to dial
-	initiated time.Time
-
-	one   *Node
-	other *Node
+	initiated     time.Time
+	lastInitiator enode.ID
+	one           *Node
+	other         *Node
 }
 
 // nodesUp returns whether both nodes are currently up
