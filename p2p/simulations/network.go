@@ -88,7 +88,7 @@ func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) 
 		conf.Reachable = func(otherID enode.ID) bool {
 			log.Trace("checking reachability")
 			_, err := net.InitConn(conf.ID, otherID)
-			if err != nil && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
+			if err != nil && time.Now().Unix()%2 == 0 { // && bytes.Compare(conf.ID.Bytes(), otherID.Bytes()) < 0 {
 				log.Error("this is what we're looking for", "err", err)
 				return false
 			}
@@ -488,6 +488,7 @@ func (net *Network) InitConn(oneID, otherID enode.ID) (*Conn, error) {
 	if time.Since(conn.initiated) < DialBanTimeout {
 		time.Sleep(DialBanTimeout)
 		return nil, fmt.Errorf("connection between %v and %v recently attempted", oneID, otherID)
+		//	return conn, nil
 	}
 
 	err = conn.nodesUp()
