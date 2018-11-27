@@ -486,6 +486,7 @@ func (net *Network) InitConn(oneID, otherID enode.ID) (*Conn, error) {
 	}
 	log.Error("initConn timeSince", "timesince", time.Since(conn.initiated))
 	if time.Since(conn.initiated) < DialBanTimeout {
+		time.Sleep(DialBanTimeout)
 		return nil, fmt.Errorf("connection between %v and %v recently attempted", oneID, otherID)
 	}
 

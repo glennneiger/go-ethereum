@@ -94,3 +94,7 @@ func (s *Simulation) kademlias() (ks map[enode.ID]*network.Kademlia) {
 	}
 	return ks
 }
+
+func NewTestKadParams() {
+
+}
