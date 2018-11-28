@@ -22,6 +22,7 @@ package http
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -543,9 +544,10 @@ func (s *Server) HandleGetFeed(w http.ResponseWriter, r *http.Request) {
 	ruid := GetRUID(r.Context())
 	uri := GetURI(r.Context())
 	log.Debug("handle.get.feed", "ruid", ruid)
+	ctx := context.WithValue(r.Context(), "feed-request", true)
 	var err error
 
-	fd, err := s.api.ResolveFeed(r.Context(), uri, r.URL.Query())
+	fd, err := s.api.ResolveFeed(ctx, uri, r.URL.Query())
 	if err != nil { // couldn't parse query string or retrieve manifest
 		getFail.Inc(1)
 		httpStatus := http.StatusBadRequest
@@ -558,7 +560,7 @@ func (s *Server) HandleGetFeed(w http.ResponseWriter, r *http.Request) {
 
 	// determine if the query specifies period and version or it is a metadata query
 	if r.URL.Query().Get("meta") == "1" {
-		unsignedUpdateRequest, err := s.api.FeedsNewRequest(r.Context(), fd)
+		unsignedUpdateRequest, err := s.api.FeedsNewRequest(ctx, fd)
 		if err != nil {
 			getFail.Inc(1)
 			respondError(w, r, fmt.Sprintf("cannot retrieve feed metadata for feed=%s: %s", fd.Hex(), err), http.StatusNotFound)
@@ -581,7 +583,7 @@ func (s *Server) HandleGetFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := s.api.FeedsLookup(r.Context(), lookupParams)
+	data, err := s.api.FeedsLookup(ctx, lookupParams)
 
 	// any error from the switch statement will end up here
 	if err != nil {
