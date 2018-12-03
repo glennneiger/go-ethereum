@@ -21,7 +21,7 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/log"
-
+	swarmmetrics "github.com/ethereum/go-ethereum/swarm/metrics"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -85,6 +85,8 @@ func main() {
 			Destination: &verbosity,
 		},
 	}
+
+	app.Flags = append(app.Flags, swarmmetrics.Flags...)
 
 	app.Commands = []cli.Command{
 		{
