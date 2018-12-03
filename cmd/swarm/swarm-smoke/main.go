@@ -34,6 +34,7 @@ var (
 	from             int
 	to               int
 	verbosity        int
+	timeout          int
 )
 
 func main() {
@@ -83,6 +84,12 @@ func main() {
 			Value:       1,
 			Usage:       "verbosity",
 			Destination: &verbosity,
+		},
+		cli.IntFlag{
+			Name:        "timeout",
+			Value:       5 * 60,
+			Usage:       "timeout to kill the test run (in seconds)",
+			Destination: &timeout,
 		},
 	}
 
