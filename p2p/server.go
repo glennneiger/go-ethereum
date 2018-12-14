@@ -807,8 +807,8 @@ func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int
 		log.Trace("first case", "gid", gid, "c.flags", c.flags, "!c.is(trustedConn|staticDial)", !c.is(trustedConn|staticDialedConn))
 		return DiscTooManyPeers
 	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
-		log.Trace("second case", "gid", gid, "c.flags", c.flags, "!c.is(trustedConn)", !c.is(trustedConn))
-		log.Trace("second case", "gid", gid, "c.flags", c.flags, "c.is(inboundConn)", c.is(inboundConn))
+		log.Trace("second case", "gid", gid, "c.flags", c.flags, "c.is(inboundConn)", c.is(inboundConn), "!c.is(trustedConn)", !c.is(trustedConn))
+		log.Trace("second case case", "gid", gid, "inboundCount", inboundCount, "srv.maxInboundConns()", srv.maxInboundConns())
 		return DiscTooManyPeers2
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected
