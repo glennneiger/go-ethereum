@@ -85,7 +85,13 @@ var defaultSubcommandHelp = cli.Command{
 	Hidden:             true,
 }
 
-var defaultNodeConfig = node.DefaultConfig
+var defaultNodeConfig = newDefaultConfig()
+
+func newDefaultConfig() node.Config {
+	dc := node.DefaultConfig
+	dc.P2P.DialRatio = 1
+	return dc
+}
 
 // This init function sets defaults so cmd/swarm can run alongside geth.
 func init() {
