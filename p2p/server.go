@@ -792,9 +792,12 @@ func (srv *Server) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount i
 func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
 	case !c.is(trustedConn|staticDialedConn) && len(peers) >= srv.MaxPeers:
+		log.Trace("c.flags", c.flags, "!c.is(trustedConn|staticDial)", !c.is(trustedConn|staticDialedConn))
 		return DiscTooManyPeers
 	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
-		return DiscTooManyPeers
+		log.Trace("c.flags", c.flags, "!c.is(trustedConn)", !c.is(trustedConn))
+		log.Trace("c.flags", c.flags, "c.is(inboundConn)", c.is(inboundConn))
+		return DiscTooManyPeers2
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected
 	case c.node.ID() == srv.localnode.ID():
