@@ -23,7 +23,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"net"
+	"runtime"
 	"sort"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -789,14 +791,24 @@ func (srv *Server) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount i
 	return srv.encHandshakeChecks(peers, inboundCount, c)
 }
 
+func getGID() uint64 {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
+}
+
 func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
+	gid := getGID()
 	switch {
 	case !c.is(trustedConn|staticDialedConn) && len(peers) >= srv.MaxPeers:
-		log.Trace("c.flags", c.flags, "!c.is(trustedConn|staticDial)", !c.is(trustedConn|staticDialedConn))
+		log.Trace("first case", "gid", gid, "c.flags", c.flags, "!c.is(trustedConn|staticDial)", !c.is(trustedConn|staticDialedConn))
 		return DiscTooManyPeers
 	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
-		log.Trace("c.flags", c.flags, "!c.is(trustedConn)", !c.is(trustedConn))
-		log.Trace("c.flags", c.flags, "c.is(inboundConn)", c.is(inboundConn))
+		log.Trace("second case", "gid", gid, "c.flags", c.flags, "!c.is(trustedConn)", !c.is(trustedConn))
+		log.Trace("second case", "gid", gid, "c.flags", c.flags, "c.is(inboundConn)", c.is(inboundConn))
 		return DiscTooManyPeers2
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected
