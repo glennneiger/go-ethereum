@@ -82,6 +82,27 @@ func (net *Network) Events() *event.Feed {
 	return &net.events
 }
 
+func (net *Network) AddNodes(nodes int) ([]enode.ID, [][]byte, error) {
+	ids := make([]enode.ID, nodes)
+	addrs := make([][]byte, nodes)
+	for i := 0; i < nodes; i++ {
+		conf := adapters.RandomNodeConfig()
+		node, err := net.NewNodeWithConfig(conf)
+		if err != nil {
+			return nil, fmt.Errorf("error starting node: %s", err)
+		}
+		if err := net.Start(node.ID()); err != nil {
+			return nil, fmt.Errorf("error starting node %s: %s", node.ID().TerminalString(), err)
+		}
+		if err := triggerChecks(trigger, net, node.ID()); err != nil {
+			return nil, fmt.Errorf("error triggering checks for node %s: %s", node.ID().TerminalString(), err)
+		}
+		ids[i] = node.ID()
+		addrs[i] = node.ID().Bytes()
+	}
+	return ids, addrs, nil
+}
+
 // NewNodeWithConfig adds a new node to the network with the given config,
 // returning an error if a node with the same ID or name already exists
 func (net *Network) NewNodeWithConfig(conf *adapters.NodeConfig) (*Node, error) {

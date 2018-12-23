@@ -42,6 +42,7 @@ var serviceFuncs = adapters.Services{
 }
 
 const testMinProxBinSize = 2
+const NoConnectionTimeout = 1
 
 var discoveryEnabled = true
 
@@ -79,22 +80,12 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 	})
 	defer net.Shutdown()
 	trigger := make(chan enode.ID)
-	ids := make([]enode.ID, nodes)
+	ids, addrs, err := net.AddNodes(nodes)
 
-	for i := 0; i < nodes; i++ {
-		conf := adapters.RandomNodeConfig()
-		node, err := net.NewNodeWithConfig(conf)
-		if err != nil {
-			return nil, fmt.Errorf("error starting node: %s", err)
-		}
-		if err := net.Start(node.ID()); err != nil {
-			return nil, fmt.Errorf("error starting node %s: %s", node.ID().TerminalString(), err)
-		}
-		if err := triggerChecks(trigger, net, node.ID()); err != nil {
-			return nil, fmt.Errorf("error triggering checks for node %s: %s", node.ID().TerminalString(), err)
-		}
-		ids[i] = node.ID()
+	if err != nil {
+		return nil, err
 	}
+
 	events := make(chan *simulations.Event)
 	sub := net.Events().Subscribe(events)
 	select {
@@ -103,7 +94,7 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 		if ev.Type == simulations.EventTypeConn {
 			utils.Fatalf("this shouldn't happen as connections weren't initiated yet")
 		}
-	case <-time.After(1 * time.Second):
+	case <-time.After(NoConnectionTimeout * time.Second):
 	}
 
 	sub.Unsubscribe()
@@ -112,13 +103,8 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 		utils.Fatalf("no connections should exist after just adding nodes")
 	}
 
-	var addrs [][]byte
 	action := func(ctx context.Context) error {
 		return nil
-	}
-	for i := range ids {
-		// collect the overlay addresses, to
-		addrs = append(addrs, ids[i].Bytes())
 	}
 
 	switch topology {
@@ -144,6 +130,7 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 			utils.Fatalf("had an error connecting full: %v", err)
 		}
 	}
+
 	// construct the peer pot, so that kademlia health can be checked
 	ppmap := network.NewPeerPotMap(testMinProxBinSize, addrs)
 	check := func(ctx context.Context, id enode.ID) (bool, error) {
