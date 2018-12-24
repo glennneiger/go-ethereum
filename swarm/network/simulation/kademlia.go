@@ -145,39 +145,4 @@ func WaitNetworkHealth(net *simulations.Network) error {
 		},
 	})
 	return result.Error
-	/*	ppmap := network.NewPeerPotMap(testMinProxBinSize, addrs)
-		check := func(ctx context.Context, id enode.ID) (bool, error) {
-			select {
-			case <-ctx.Done():
-				return false, ctx.Err()
-			default:
-			}
-			node := net.GetNode(id)
-			if node == nil {
-				return false, fmt.Errorf("unknown node: %s", id)
-			}
-			client, err := node.Client()
-			if err != nil {
-				return false, fmt.Errorf("error getting node client: %s", err)
-			}
-			healthy := &network.Health{}
-			if err := client.Call(&healthy, "hive_healthy", ppmap[id.String()]); err != nil {
-				return false, fmt.Errorf("error getting node health: %s", err)
-			}
-			log.Debug(fmt.Sprintf("node %4s healthy: got nearest neighbours: %v, know nearest neighbours: %v, saturated: %v\n%v", id, healthy.GotNN, healthy.KnowNN, healthy.Full, healthy.Hive))
-			return healthy.KnowNN && healthy.GotNN && healthy.Full, nil
-		}
-
-		// 64 nodes ~ 1min
-		timeout := 30 * time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-		result := simulations.NewSimulation(net).Run(ctx, &simulations.Step{
-			Trigger: trigger,
-			Expect: &simulations.Expectation{
-				Nodes: ids,
-				Check: check,
-			},
-		})
-		return result.Error*/
 }
