@@ -97,11 +97,11 @@ func (s *Simulation) kademlias() (ks map[enode.ID]*network.Kademlia) {
 	return ks
 }
 
-func WaitNetworkHealth(net *simulations.Network) error {
+func (s *Simulation) WaitNetworkHealth() error {
 	// construct the peer pot, so that kademlia health can be checked
-	addrs := make([][]byte, len(net.Nodes))
-	ids := make([]enode.ID, len(net.Nodes))
-	for i, v := range net.Nodes {
+	addrs := make([][]byte, len(s.Net.Nodes))
+	ids := make([]enode.ID, len(s.Net.Nodes))
+	for i, v := range s.Net.Nodes {
 		ids[i] = v.ID()
 		addrs[i] = v.ID().Bytes()
 	}
@@ -114,7 +114,7 @@ func WaitNetworkHealth(net *simulations.Network) error {
 		default:
 		}
 
-		node := net.GetNode(id)
+		node := s.Net.GetNode(id)
 		if node == nil {
 			return false, fmt.Errorf("unknown node: %s", id)
 		}
@@ -137,7 +137,7 @@ func WaitNetworkHealth(net *simulations.Network) error {
 	defer cancel()
 	trigger := make(chan enode.ID)
 
-	result := simulations.NewSimulation(net).Run(ctx, &simulations.Step{
+	result := simulations.NewSimulation(s.Net).Run(ctx, &simulations.Step{
 		Trigger: trigger,
 		Expect: &simulations.Expectation{
 			Nodes: ids,

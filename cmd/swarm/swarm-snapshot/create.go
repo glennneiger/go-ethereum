@@ -120,8 +120,8 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) error {
 			utils.Fatalf("had an error connecting full: %v", err)
 		}
 	}
-
-	err = simulation.WaitNetworkHealth(net)
+	sim := &simulation.Simulation{Net: net}
+	err = sim.WaitNetworkHealth()
 	if err != nil {
 		return err
 	}
