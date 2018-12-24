@@ -17,7 +17,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,11 +28,10 @@ import (
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/simulations"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
 	"github.com/ethereum/go-ethereum/swarm/network"
+	"github.com/ethereum/go-ethereum/swarm/network/simulation"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -61,29 +59,25 @@ func create(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	result, err := discoverySnapshot(10, adapters.NewSimAdapter(serviceFuncs))
+	err = discoverySnapshot(10, adapters.NewSimAdapter(serviceFuncs))
 	if err != nil {
-		utils.Fatalf("Setting up simulation failed: %v", err)
-	}
-
-	if result.Error != nil {
-		utils.Fatalf("Simulation failed: %s", result.Error)
+		utils.Fatalf("Simulation failed: %s", err)
 	}
 
 	return err
 }
-func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.StepResult, error) {
+
+func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) error {
 	// create network
 	net := simulations.NewNetwork(adapter, &simulations.NetworkConfig{
 		ID:             "0",
 		DefaultService: "discovery",
 	})
 	defer net.Shutdown()
-	trigger := make(chan enode.ID)
-	ids, addrs, err := net.AddNodes(nodes)
+	ids, err := net.AddNodes(nodes)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	events := make(chan *simulations.Event)
@@ -101,10 +95,6 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 
 	if len(net.Conns) > 0 {
 		utils.Fatalf("no connections should exist after just adding nodes")
-	}
-
-	action := func(ctx context.Context) error {
-		return nil
 	}
 
 	switch topology {
@@ -131,50 +121,12 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 		}
 	}
 
-	// construct the peer pot, so that kademlia health can be checked
-	ppmap := network.NewPeerPotMap(testMinProxBinSize, addrs)
-	check := func(ctx context.Context, id enode.ID) (bool, error) {
-		select {
-		case <-ctx.Done():
-			return false, ctx.Err()
-		default:
-		}
-
-		node := net.GetNode(id)
-		if node == nil {
-			return false, fmt.Errorf("unknown node: %s", id)
-		}
-		client, err := node.Client()
-		if err != nil {
-			return false, fmt.Errorf("error getting node client: %s", err)
-		}
-		healthy := &network.Health{}
-		if err := client.Call(&healthy, "hive_healthy", ppmap[id.String()]); err != nil {
-			return false, fmt.Errorf("error getting node health: %s", err)
-		}
-		log.Debug(fmt.Sprintf("node %4s healthy: got nearest neighbours: %v, know nearest neighbours: %v, saturated: %v\n%v", id, healthy.GotNN, healthy.KnowNN, healthy.Full, healthy.Hive))
-		return healthy.KnowNN && healthy.GotNN && healthy.Full, nil
-	}
-
-	// 64 nodes ~ 1min
-	// 128 nodes ~
-	timeout := 30 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	result := simulations.NewSimulation(net).Run(ctx, &simulations.Step{
-		Action:  action,
-		Trigger: trigger,
-		Expect: &simulations.Expectation{
-			Nodes: ids,
-			Check: check,
-		},
-	})
-	if result.Error != nil {
-		return result, result.Error
+	err = simulation.WaitNetworkHealth(net)
+	if err != nil {
+		return err
 	}
 
 	var snap *simulations.Snapshot
-	var err error
 	if len(services) > 0 {
 		var addServices []string
 		var removeServices []string
@@ -193,18 +145,18 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) (*simulations.St
 	}
 
 	if err != nil {
-		return nil, errors.New("no shapshot dude")
+		return errors.New("no shapshot dude")
 	}
 	jsonsnapshot, err := json.Marshal(snap)
 	if err != nil {
-		return nil, fmt.Errorf("corrupt json snapshot: %v", err)
+		return fmt.Errorf("corrupt json snapshot: %v", err)
 	}
 	err = ioutil.WriteFile(filename, jsonsnapshot, 0755)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return result, nil
+	return nil
 }
 
 func newService(ctx *adapters.ServiceContext) (node.Service, error) {
@@ -227,41 +179,4 @@ func newService(ctx *adapters.ServiceContext) (node.Service, error) {
 	}
 
 	return network.NewBzz(config, kad, nil, nil, nil), nil
-}
-
-func triggerChecks(trigger chan enode.ID, net *simulations.Network, id enode.ID) error {
-	node := net.GetNode(id)
-	if node == nil {
-		return fmt.Errorf("unknown node: %s", id)
-	}
-	client, err := node.Client()
-	if err != nil {
-		return err
-	}
-	events := make(chan *p2p.PeerEvent)
-	sub, err := client.Subscribe(context.Background(), "admin", events, "peerEvents")
-	if err != nil {
-		return fmt.Errorf("error getting peer events for node %v: %s", id, err)
-	}
-	go func() {
-		defer sub.Unsubscribe()
-
-		tick := time.NewTicker(time.Second)
-		defer tick.Stop()
-
-		for {
-			select {
-			case <-events:
-				trigger <- id
-			case <-tick.C:
-				trigger <- id
-			case err := <-sub.Err():
-				if err != nil {
-					log.Error(fmt.Sprintf("error getting peer events for node %v", id), "err", err)
-				}
-				return
-			}
-		}
-	}()
-	return nil
 }

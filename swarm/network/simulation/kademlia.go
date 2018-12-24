@@ -19,11 +19,13 @@ package simulation
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/simulations"
 	"github.com/ethereum/go-ethereum/swarm/network"
 )
 
@@ -93,4 +95,89 @@ func (s *Simulation) kademlias() (ks map[enode.ID]*network.Kademlia) {
 		ks[id] = k
 	}
 	return ks
+}
+
+func WaitNetworkHealth(net *simulations.Network) error {
+	// construct the peer pot, so that kademlia health can be checked
+	addrs := make([][]byte, len(net.Nodes))
+	ids := make([]enode.ID, len(net.Nodes))
+	for i, v := range net.Nodes {
+		ids[i] = v.ID()
+		addrs[i] = v.ID().Bytes()
+	}
+	// construct the peer pot, so that kademlia health can be checked
+	ppmap := network.NewPeerPotMap(2, addrs) //yes i'm hardcoding this
+	check := func(ctx context.Context, id enode.ID) (bool, error) {
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		default:
+		}
+
+		node := net.GetNode(id)
+		if node == nil {
+			return false, fmt.Errorf("unknown node: %s", id)
+		}
+		client, err := node.Client()
+		if err != nil {
+			return false, fmt.Errorf("error getting node client: %s", err)
+		}
+		healthy := &network.Health{}
+		if err := client.Call(&healthy, "hive_healthy", ppmap[id.String()]); err != nil {
+			return false, fmt.Errorf("error getting node health: %s", err)
+		}
+		log.Debug(fmt.Sprintf("node %4s healthy: got nearest neighbours: %v, know nearest neighbours: %v, saturated: %v\n%v", id, healthy.GotNN, healthy.KnowNN, healthy.Full))
+		return healthy.KnowNN && healthy.GotNN && healthy.Full, nil
+	}
+
+	// 64 nodes ~ 1min
+	// 128 nodes ~
+	timeout := 30 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	trigger := make(chan enode.ID)
+
+	result := simulations.NewSimulation(net).Run(ctx, &simulations.Step{
+		Trigger: trigger,
+		Expect: &simulations.Expectation{
+			Nodes: ids,
+			Check: check,
+		},
+	})
+	return result.Error
+	/*	ppmap := network.NewPeerPotMap(testMinProxBinSize, addrs)
+		check := func(ctx context.Context, id enode.ID) (bool, error) {
+			select {
+			case <-ctx.Done():
+				return false, ctx.Err()
+			default:
+			}
+			node := net.GetNode(id)
+			if node == nil {
+				return false, fmt.Errorf("unknown node: %s", id)
+			}
+			client, err := node.Client()
+			if err != nil {
+				return false, fmt.Errorf("error getting node client: %s", err)
+			}
+			healthy := &network.Health{}
+			if err := client.Call(&healthy, "hive_healthy", ppmap[id.String()]); err != nil {
+				return false, fmt.Errorf("error getting node health: %s", err)
+			}
+			log.Debug(fmt.Sprintf("node %4s healthy: got nearest neighbours: %v, know nearest neighbours: %v, saturated: %v\n%v", id, healthy.GotNN, healthy.KnowNN, healthy.Full, healthy.Hive))
+			return healthy.KnowNN && healthy.GotNN && healthy.Full, nil
+		}
+
+		// 64 nodes ~ 1min
+		timeout := 30 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		result := simulations.NewSimulation(net).Run(ctx, &simulations.Step{
+			Trigger: trigger,
+			Expect: &simulations.Expectation{
+				Nodes: ids,
+				Check: check,
+			},
+		})
+		return result.Error*/
 }
