@@ -689,6 +689,8 @@ func (k *Kademlia) saturation(n int) int {
 		return prev == po && size >= n
 	})
 	depth := depthForPot(k.conns, k.MinProxBinSize, k.base)
+
+	// if in the iterator above we iterated deeper than the neighbourhood depth - return depth
 	if depth < prev {
 		return depth
 	}
