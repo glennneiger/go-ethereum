@@ -42,7 +42,7 @@ var serviceFuncs = adapters.Services{
 const testMinProxBinSize = 2
 const NoConnectionTimeout = 1
 
-var discoveryEnabled = true
+var discovery = true
 
 func init() {
 	adapters.RegisterServices(serviceFuncs)
@@ -68,7 +68,8 @@ func create(ctx *cli.Context) error {
 }
 
 func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) error {
-	// create network
+	//disable discovery if topology is specified
+	discovery = topology == ""
 	net := simulations.NewNetwork(adapter, &simulations.NetworkConfig{
 		ID:             "0",
 		DefaultService: "discovery",
@@ -100,24 +101,25 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) error {
 	switch topology {
 	case "star":
 		net.SetPivotNode(ids[pivot])
-		err := net.ConnectNodesStarPivot(nil)
-		if err != nil {
+		if err := net.ConnectNodesStarPivot(nil); err != nil {
 			utils.Fatalf("had an error connecting the nodes in a star: %v", err)
 		}
 	case "ring":
-		err := net.ConnectNodesRing(nil)
-		if err != nil {
+		if err := net.ConnectNodesRing(nil); err != nil {
 			utils.Fatalf("had an error connecting the nodes in a ring: %v", err)
 		}
 	case "chain":
-		err := net.ConnectNodesChain(nil)
-		if err != nil {
+		if err := net.ConnectNodesChain(nil); err != nil {
 			utils.Fatalf("had an error connecting the nodes in a chain: %v", err)
 		}
 	case "full":
-		err := net.ConnectNodesFull(nil)
-		if err != nil {
+		if err := net.ConnectNodesFull(nil); err != nil {
 			utils.Fatalf("had an error connecting full: %v", err)
+		}
+	default:
+		// no topology specified = connect ring and await discovery
+		if err := net.ConnectNodesRing(nil); err != nil {
+			utils.Fatalf("had an error connecting ring: %v", err)
 		}
 	}
 	sim := &simulation.Simulation{Net: net}
@@ -168,7 +170,7 @@ func newService(ctx *adapters.ServiceContext) (node.Service, error) {
 	kad := network.NewKademlia(addr.Over(), kp)
 	hp := network.NewHiveParams()
 	hp.KeepAliveInterval = time.Duration(200) * time.Millisecond
-	hp.Discovery = discoveryEnabled
+	hp.Discovery = discovery
 
 	log.Info(fmt.Sprintf("discovery for nodeID %s is %t", ctx.Config.ID.String(), hp.Discovery))
 
