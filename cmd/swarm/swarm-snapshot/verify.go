@@ -19,7 +19,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -71,7 +70,6 @@ func verifySnapshot(filename string) error {
 	}
 
 	for _, n := range snap.Nodes {
-		fmt.Println("1")
 		n.Node.Config.EnableMsgEvents = true
 	}
 	net := simulations.NewNetwork(adapters.NewSimAdapter(serviceFuncs), &simulations.NetworkConfig{
