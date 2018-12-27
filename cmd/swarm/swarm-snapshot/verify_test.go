@@ -17,14 +17,19 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestSnapshotVerify(t *testing.T) {
-	t.Skip("to be implemented")
-	snap := runSnapshot(t, "")
-	_, matches := snap.ExpectRegexp(`.`)
-	snap.ExpectExit()
-	fmt.Sprintf("%v", matches)
+	snap := runSnapshot(t,
+		"--verbosity",
+		"6",
+		"v",
+		"snapshot.json",
+	)
+
+	_, _ = snap.ExpectRegexp(".")
+	if snap.ExitStatus() != 0 {
+		t.Fatal("expected exit code 0")
+	}
 }

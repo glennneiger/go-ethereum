@@ -17,14 +17,80 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
 
+	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/p2p/simulations"
+	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
+	"github.com/ethereum/go-ethereum/swarm/network/simulation"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
-func verify(c *cli.Context) error {
-	log.PrintOrigins(true)
-	log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(verbosity), log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
+func verify(ctx *cli.Context) error {
+	if len(ctx.Args()) < 1 {
+		return errors.New("argument should be the filename to verify or write-to")
+	}
+	filename = ctx.Args()[0]
+	err := ResolvePath()
+	if err != nil {
+		return err
+	}
+	err = verifySnapshot(filename)
+	if err != nil {
+		utils.Fatalf("Simulation failed: %s", err)
+	}
+
+	return err
+
+}
+
+func verifySnapshot(filename string) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			log.Error("Error closing snapshot file", "err", err)
+		}
+	}()
+	jsonbyte, err := ioutil.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	var snap simulations.Snapshot
+	err = json.Unmarshal(jsonbyte, &snap)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range snap.Nodes {
+		fmt.Println("1")
+		n.Node.Config.EnableMsgEvents = true
+	}
+	net := simulations.NewNetwork(adapters.NewSimAdapter(serviceFuncs), &simulations.NetworkConfig{
+		ID:             "0",
+		DefaultService: "discovery",
+	})
+	defer net.Shutdown()
+
+	err = net.Load(&snap)
+	if err != nil {
+		return err
+	}
+	log.Info("Snapshot loaded")
+	return nil
+
+	sim := &simulation.Simulation{Net: net}
+	err = sim.WaitNetworkHealth()
+	if err != nil {
+		return err
+	}
 	return nil
 }

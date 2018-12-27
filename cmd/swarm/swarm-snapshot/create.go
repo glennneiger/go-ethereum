@@ -21,36 +21,20 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p/simulations"
 	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
-	"github.com/ethereum/go-ethereum/swarm/network"
 	"github.com/ethereum/go-ethereum/swarm/network/simulation"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
-var serviceFuncs = adapters.Services{
-	"discovery": newService,
-}
-
 const testMinProxBinSize = 2
 const NoConnectionTimeout = 1
 
-var discovery = true
-
-func init() {
-	adapters.RegisterServices(serviceFuncs)
-}
-
 func create(ctx *cli.Context) error {
-	log.PrintOrigins(true)
-	log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(verbosity), log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
 	if len(ctx.Args()) < 1 {
 		return errors.New("argument should be the filename to verify or write-to")
 	}
@@ -159,26 +143,4 @@ func discoverySnapshot(nodes int, adapter adapters.NodeAdapter) error {
 	}
 
 	return nil
-}
-
-func newService(ctx *adapters.ServiceContext) (node.Service, error) {
-	addr := network.NewAddr(ctx.Config.Node())
-
-	kp := network.NewKadParams()
-	kp.MinProxBinSize = testMinProxBinSize
-
-	kad := network.NewKademlia(addr.Over(), kp)
-	hp := network.NewHiveParams()
-	hp.KeepAliveInterval = time.Duration(200) * time.Millisecond
-	hp.Discovery = discovery
-
-	log.Info(fmt.Sprintf("discovery for nodeID %s is %t", ctx.Config.ID.String(), hp.Discovery))
-
-	config := &network.BzzConfig{
-		OverlayAddr:  addr.Over(),
-		UnderlayAddr: addr.Under(),
-		HiveParams:   hp,
-	}
-
-	return network.NewBzz(config, kad, nil, nil, nil), nil
 }
